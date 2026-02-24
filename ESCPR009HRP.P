@@ -1,0 +1,319 @@
+/*--------------------------------------------------------------------
+*                                                                    *
+*           Programa...: ESCPR009HRP.P                               *
+*           Autor......: Vinicius Oliveira - TSA                     *
+*           Data.......: 24/02/2026                                  *
+*           Descricao..: Movimento Reporte.                          *
+*                                                                    *
+*--------------------------------------------------------------------*/
+DEFINE SHARED VARIABLE c-dt-movto-ini    AS DATE FORMAT "99/99/9999" NO-UNDO.  
+DEFINE SHARED VARIABLE c-dt-movto-fin    AS DATE FORMAT "99/99/9999" NO-UNDO. 
+DEFINE SHARED VARIABLE c-it-cod-ini      AS CHAR FORMAT "x(16)" NO-UNDO.
+DEFINE SHARED VARIABLE c-it-cod-fin      AS CHAR FORMAT "x(16)" NO-UNDO.
+DEFINE SHARED VARIABLE c-fm-cod-ini      AS CHAR FORMAT "x(8)" NO-UNDO.
+DEFINE SHARED VARIABLE c-fm-cod-fin      AS CHAR FORMAT "x(8)" NO-UNDO.
+DEFINE SHARED VARIABLE c-planejador-ini  AS CHAR FORMAT "x(12)" NO-UNDO.
+DEFINE SHARED VARIABLE c-planejador-fin  AS CHAR FORMAT "x(12)" NO-UNDO.
+DEFINE SHARED VARIABLE c-cod-estab-ini   AS CHAR FORMAT "X(5)" NO-UNDO.
+DEFINE SHARED VARIABLE c-cod-estab-fin   AS CHAR FORMAT "X(5)" NO-UNDO.
+DEFINE SHARED VARIABLE c-nr-linha-ini    AS INT  NO-UNDO.
+DEFINE SHARED VARIABLE c-nr-linha-fin    AS INT  NO-UNDO.
+
+DEF VAR c-faixa-titulo  AS CHAR 	      NO-UNDO INIT "A1:K1".
+DEF VAR i-linha         AS INT  	      NO-UNDO INIT 3.
+DEF VAR i-coluna        AS INT  	      NO-UNDO INIT 1.
+
+{utp/utapi013.i}
+
+RUN utp/utapi013.p PERSISTENT SET h-utapi013.
+
+CREATE tt-configuracao2.
+ASSIGN
+    tt-configuracao2.versao-integracao   = 1
+    tt-configuracao2.arquivo-num         = 1
+    tt-configuracao2.arquivo             = "c:\tmp\ESCPR009H" + STRING(TIME, "99999") + ".xls"
+    tt-configuracao2.total-planilha      = 1
+    tt-configuracao2.exibir-construcao   = NO
+    tt-configuracao2.abrir-excel-termino = YES
+    tt-configuracao2.imprimir            = NO
+    tt-configuracao2.orientacao          = 2.
+
+CREATE tt-planilha2.
+ASSIGN
+    tt-planilha2.arquivo-num       = 1
+    tt-planilha2.planilha-num      = 1
+    tt-planilha2.planilha-nome     = "Reporte"
+    tt-planilha2.linhas-grade      = NO
+    tt-planilha2.formatar-planilha = NO
+    tt-planilha2.formatar-faixa    = YES.
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 1
+       tt-dados.celula-linha  = i-linha - 2
+       tt-dados.celula-valor  = "Movimento Reporte".
+       
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 1
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Familia".
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 2
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Item".
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 3
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Desc. Item".
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 4
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "UN".
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 5
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Depos.".
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 6
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Data movto.".
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 7
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Ord. Prod.".
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 8
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Ref.".       
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 9
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Esp.".       
+
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 10
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Lote/Serie".  
+            
+CREATE tt-dados.
+ASSIGN tt-dados.arquivo-num   = 1
+       tt-dados.planilha-num  = 1
+       tt-dados.celula-coluna = 11
+       tt-dados.celula-linha  = i-linha - 1
+       tt-dados.celula-valor  = "Quantidade".                
+       
+/*FOR EACH item WHERE item.fm-codigo = "202010" NO-LOCK,
+    EACH movto-estoq WHERE item.it-codigo = movto-estoq.it-codigo 
+                       AND movto-estoq.dt-criacao = TODAY NO-LOCK BY item.fm-codigo.*/
+                       
+FOR EACH item WHERE item.it-codigo >= c-it-cod-ini    
+					item.it-codigo <= c-it-cod-fin    
+					item.fm-codigo >= c-fm-cod-ini    
+					item.fm-codigo <= c-fm-cod-fin NO-LOCK,
+	EACH movto-estoq OF item WHERE movto-estoq.it-codigo = item.it-codigo
+							   AND movto-estoq.dt-criacao  >= c-dt-movto-ini
+								   movto-estoq.dt-criacao  <= c-dt-movto-fin
+								   movto-estoq.cod-estabel >= c-cod-estab-ini 
+					               movto-estoq.cod-estabel >= c-cod-estab-fin NO-LOCK,
+	EACH ord-prod OF movto-estoq WHERE ord-prod.nr-ord-produ = movto-estoq.nr-ord-produ 
+								   AND ord-prod.nr-linha >= c-nr-linha-ini
+								   AND ord-prod.nr-linha <= c-nr-linha-fin
+								   AND ord-prod.cd-planejado >=	c-planejador-ini
+								   AND ord-prod.cd-planejado <=	c-planejador-fin NO-LOCK BY item.fm-codigo. 
+  
+		  CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num    = 1
+                       tt-dados.planilha-num   = 1
+                       tt-dados.celula-coluna  = 1
+                       tt-dados.celula-linha   = i-linha
+                       tt-dados.celula-formato = "@"
+                       tt-dados.celula-valor   = item.fm-codigo.
+                
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num   = 1
+                       tt-dados.planilha-num  = 1
+                       tt-dados.celula-coluna = 2
+                       tt-dados.celula-linha  = i-linha
+                       tt-dados.celula-valor  = item.it-codigo.
+                    
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num   = 1
+                       tt-dados.planilha-num  = 1
+                       tt-dados.celula-coluna = 3
+                       tt-dados.celula-linha  = i-linha
+                       tt-dados.celula-valor  = item.desc-item.
+					   
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num   = 1
+                       tt-dados.planilha-num  = 1
+                       tt-dados.celula-coluna = 4
+                       tt-dados.celula-linha  = i-linha
+                       tt-dados.celula-valor  = item.un.
+                       
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num   = 1
+                       tt-dados.planilha-num  = 1
+                       tt-dados.celula-coluna = 5
+                       tt-dados.celula-linha  = i-linha
+                       tt-dados.celula-formato = "@"
+                       tt-dados.celula-valor  = movto-estoq.cod-depos.
+                       
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num   = 1
+                       tt-dados.planilha-num  = 1
+                       tt-dados.celula-coluna = 6
+                       tt-dados.celula-linha  = i-linha
+                       tt-dados.celula-valor  = STRING(movto-estoq.dt-criacao).
+             
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num   = 1
+                       tt-dados.planilha-num  = 1
+                       tt-dados.celula-coluna = 7
+                       tt-dados.celula-linha  = i-linha
+                       tt-dados.celula-valor  = STRING(movto-estoq.nr-ord-produ).
+                       
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num    = 1
+                       tt-dados.planilha-num   = 1
+                       tt-dados.celula-coluna  = 8
+                       tt-dados.celula-linha   = i-linha
+                       tt-dados.celula-formato = "@"
+                       tt-dados.celula-valor   = movto-estoq.referencia.
+                       
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num    = 1
+                       tt-dados.planilha-num   = 1
+                       tt-dados.celula-coluna  = 9
+                       tt-dados.celula-linha   = i-linha
+                       tt-dados.celula-formato = "@"
+                       tt-dados.celula-valor   = STRING(movto-estoq.esp-docto).
+                       
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num    = 1
+                       tt-dados.planilha-num   = 1
+                       tt-dados.celula-coluna  = 10
+                       tt-dados.celula-linha   = i-linha
+                       tt-dados.celula-formato = "@"
+                       tt-dados.celula-valor   = movto-estoq.lote.
+                       
+                CREATE tt-dados.
+                ASSIGN tt-dados.arquivo-num    = 1
+                       tt-dados.planilha-num   = 1
+                       tt-dados.celula-coluna  = 11
+                       tt-dados.celula-linha   = i-linha
+                       tt-dados.celula-formato = "@"
+                       tt-dados.celula-valor   = STRING(movto-estoq.quantidade).  
+                       
+                i-linha = i-linha + 1.
+    
+END.
+
+CREATE tt-formatar.
+ASSIGN
+    tt-formatar.arquivo-num  = 1
+    tt-formatar.planilha-num = 1
+    tt-formatar.faixa        = c-faixa-titulo
+    tt-formatar.atributo     = "merge"
+    tt-formatar.valor        = "yes".
+
+CREATE tt-formatar.
+ASSIGN
+    tt-formatar.arquivo-num  = 1
+    tt-formatar.planilha-num = 1
+    tt-formatar.faixa        = c-faixa-titulo
+    tt-formatar.atributo     = "Bold"
+    tt-formatar.valor        = "yes".
+
+CREATE tt-formatar.
+ASSIGN
+    tt-formatar.arquivo-num  = 1
+    tt-formatar.planilha-num = 1
+    tt-formatar.faixa        = "A1:K2"
+    tt-formatar.atributo     = "iColorIndex"
+    tt-formatar.valor        = "5".
+                            
+                            
+CREATE tt-formatar.
+ASSIGN
+    tt-formatar.arquivo-num  = 1
+    tt-formatar.planilha-num = 1
+    tt-formatar.faixa        = "A3:K9999"
+    tt-formatar.atributo     = "HorizontalAlignment"
+    tt-formatar.valor        = "05".
+    
+CREATE tt-formatar.
+ASSIGN
+    tt-formatar.arquivo-num  = 1
+    tt-formatar.planilha-num = 1
+    tt-formatar.faixa        = "D:F"
+    tt-formatar.atributo     = "HorizontalAlignment"
+    tt-formatar.valor        = "01".
+    
+CREATE tt-formatar.
+ASSIGN
+    tt-formatar.arquivo-num  = 1
+    tt-formatar.planilha-num = 1
+    tt-formatar.faixa        = "A:C"
+    tt-formatar.atributo     = "HorizontalAlignment"
+    tt-formatar.valor        = "04".
+
+CREATE tt-formatar.
+ASSIGN
+    tt-formatar.arquivo-num  = 1
+    tt-formatar.planilha-num = 1
+    tt-formatar.faixa        = c-faixa-titulo
+    tt-formatar.atributo     = "HorizontalAlignment"
+    tt-formatar.valor        = "01".
+        
+CREATE tt-formatar.
+ASSIGN
+    tt-formatar.arquivo-num  = 1
+    tt-formatar.planilha-num = 1
+    tt-formatar.faixa        = "A1:K9999"
+    tt-formatar.atributo     = "AutoFit"
+    tt-formatar.valor        = "true".
+   
+RUN pi-execute3 IN h-utapi013 (
+    INPUT-OUTPUT TABLE tt-configuracao2,
+    INPUT-OUTPUT TABLE tt-planilha2,
+    INPUT-OUTPUT TABLE tt-dados,
+    INPUT-OUTPUT TABLE tt-formatar,
+    INPUT-OUTPUT TABLE tt-grafico2,
+    INPUT-OUTPUT TABLE tt-erros).
+
+IF RETURN-VALUE = "nok" THEN DO:
+    FOR EACH tt-erros:
+        DISPLAY tt-erros WITH 1 COL WIDTH 500.
+    END.
+END.
+
+DELETE PROCEDURE h-utapi013.
