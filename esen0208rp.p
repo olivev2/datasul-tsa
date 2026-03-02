@@ -17,8 +17,6 @@ DEFINE SHARED VARIABLE c-bt-obsoleto AS LOGICAL		 	NO-UNDO.
 
 DEF VAR c-desc-es       AS CHAR FORMAT "x(80)" 	NO-UNDO.
 DEF VAR c-un-es         AS CHAR FORMAT "x(03)"  NO-UNDO.
-DEF VAR c-quant-es 		AS INT 			NO-UNDO.
-DEF VAR c-quantl-es 	AS INT 			NO-UNDO.
 DEF VAR c-faixa-titulo  AS CHAR 				NO-UNDO INIT "A1:N1".
 DEF VAR i-linha         AS INT  				NO-UNDO INIT 3.
 DEF VAR i-coluna        AS INT  				NO-UNDO INIT 1.
@@ -30,6 +28,8 @@ DEF VAR c-codigo-pai    AS CHAR 			    NO-UNDO.
 DEFINE TEMP-TABLE tt-ultima-camada NO-UNDO
     FIELD componente     AS CHAR FORMAT "X(16)"
     FIELD rowid-estrutura AS ROWID
+    FIELD qtd-compon      AS DECIMAL
+    FIELD quant-liquid    AS DECIMAL
     INDEX idx-unique IS UNIQUE componente rowid-estrutura.
 	
 DEF BUFFER b-item-es FOR mgcad.item.
@@ -221,8 +221,6 @@ ASSIGN
 									 AND (NOT c-bt-obsoleto OR (b-estrutura.data-termino <> ?
 									 AND b-estrutura.data-termino > TODAY)) NO-LOCK NO-ERROR.
 
-			c-quant-es  = estrutura.qtd-compon.
-			c-quantl-es = estrutura.quant-liquid.
 			
 			
 			IF AVAILABLE b-estrutura THEN
@@ -240,7 +238,9 @@ ASSIGN
 				IF NOT AVAILABLE tt-ultima-camada THEN DO:
 					CREATE tt-ultima-camada.
 					ASSIGN tt-ultima-camada.componente      = p-componente
-						   tt-ultima-camada.rowid-estrutura = ROWID(mgcad.estrutura).
+						   tt-ultima-camada.rowid-estrutura = ROWID(mgcad.estrutura)
+						   tt-ultima-camada.qtd-compon      = mgcad.estrutura.qtd-compon
+						   tt-ultima-camada.quant-liquid    = mgcad.estrutura.quant-liquid.
 				END.
 			END.
 		END.
@@ -335,7 +335,7 @@ ASSIGN
                        tt-dados.celula-coluna  = 8
                        tt-dados.celula-linha   = i-linha
                        tt-dados.celula-formato = "@"
-                       tt-dados.celula-valor   = string(c-quant-es).
+                       tt-dados.celula-valor   = STRING(tt-ultima-camada.qtd-compon).
                        
                 CREATE tt-dados.
                 ASSIGN tt-dados.arquivo-num    = 1
@@ -359,7 +359,7 @@ ASSIGN
                        tt-dados.celula-coluna  = 11
                        tt-dados.celula-linha   = i-linha
                        tt-dados.celula-formato = "@"
-                       tt-dados.celula-valor   = string(c-quantl-es).
+                       tt-dados.celula-valor   = STRING(tt-ultima-camada.quant-liquid).
              
                 CREATE tt-dados.
                 ASSIGN tt-dados.arquivo-num    = 1
