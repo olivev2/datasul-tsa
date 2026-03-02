@@ -1,11 +1,11 @@
-/*--------------------------------------------------------------------
-*                                                                    *
-*           Programa...: ESEN0208RP.P                                *
-*           Autor......: Vinicius Oliveira - TSA                     *
-*           Data.......: 11/02/2026                                  *
-*           Descricao..: Especifico "Onde se usa Sumarizado".        *
-*                                                                    *
-*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*
+ *                                                                    *
+ *           Programa...: ESEN0208RP.P                                *
+ *           Autor......: Vinicius Oliveira - TSA                     *
+ *           Data.......: 11/02/2026                                  *
+ *           Descricao..: Especifico "Onde se usa Sumarizado".        *
+ *                                                                    *
+ *--------------------------------------------------------------------*/
 
 DEFINE SHARED VARIABLE c-ge-ini AS INT  FORMAT ">9" 	NO-UNDO.
 DEFINE SHARED VARIABLE c-ge-fin AS INT  FORMAT ">9" 	NO-UNDO.
@@ -17,14 +17,23 @@ DEFINE SHARED VARIABLE c-bt-obsoleto AS LOGICAL		 	NO-UNDO.
 
 DEF VAR c-desc-es       AS CHAR FORMAT "x(80)" 	NO-UNDO.
 DEF VAR c-un-es         AS CHAR FORMAT "x(03)"  NO-UNDO.
+DEF VAR c-quant-es 		AS INT 			NO-UNDO.
+DEF VAR c-quantl-es 	AS INT 			NO-UNDO.
 DEF VAR c-faixa-titulo  AS CHAR 				NO-UNDO INIT "A1:N1".
 DEF VAR i-linha         AS INT  				NO-UNDO INIT 3.
 DEF VAR i-coluna        AS INT  				NO-UNDO INIT 1.
 DEF VAR l-tem-estrutura AS LOGICAL 				NO-UNDO.
 DEF VAR c-data-inicio   AS CHAR 				NO-UNDO.
 DEF VAR c-data-termino  AS CHAR 				NO-UNDO.
+DEF VAR c-codigo-pai    AS CHAR 			    NO-UNDO.
 
+DEFINE TEMP-TABLE tt-ultima-camada NO-UNDO
+    FIELD componente     AS CHAR FORMAT "X(16)"
+    FIELD rowid-estrutura AS ROWID
+    INDEX idx-unique IS UNIQUE componente rowid-estrutura.
+	
 DEF BUFFER b-item-es FOR mgcad.item.
+DEF BUFFER b-estrutura FOR mgcad.estrutura.
 
 {utp/utapi013.i}
 
@@ -192,21 +201,68 @@ ASSIGN
     tt-formatar.faixa        = "A1:N2"
     tt-formatar.atributo     = "iColorIndex"
     tt-formatar.valor        = "5".
-                            
-i-linha = i-linha - 1.
-                                         
-FOR EACH mgcad.item WHERE mgcad.item.ge-codigo >= c-ge-ini 
-                      AND mgcad.item.ge-codigo <= c-ge-fin
-                      AND mgcad.item.fm-codigo >= c-fm-ini
-                      AND mgcad.item.fm-codigo <= c-fm-fin 
-                      AND mgcad.item.it-codigo >= c-it-ini
-                      AND mgcad.item.it-codigo <= c-it-fin	NO-LOCK.
-                
-    FOR EACH estrutura WHERE estrutura.es-codigo = item.it-codigo 
-                         AND (NOT c-bt-obsoleto OR (mgcad.estrutura.data-termino <> ? 
-                         AND mgcad.estrutura.data-termino > TODAY)) NO-LOCK.
+                            				
+	i-linha = i-linha - 1.
 
-					i-linha = i-linha + 1.
+	PROCEDURE pi-busca-ultima-camada:
+		DEFINE INPUT PARAMETER p-componente  AS CHAR NO-UNDO.
+		DEFINE INPUT PARAMETER p-es-codigo   AS CHAR NO-UNDO.
+
+		DEFINE VARIABLE l-tem-filho AS LOGICAL NO-UNDO.
+
+		FOR EACH mgcad.estrutura WHERE mgcad.estrutura.es-codigo = p-es-codigo
+								  AND (NOT c-bt-obsoleto OR (mgcad.estrutura.data-termino <> ?
+								  AND mgcad.estrutura.data-termino > TODAY)) NO-LOCK:
+
+			ASSIGN l-tem-filho  = NO
+				   c-codigo-pai = mgcad.estrutura.it-codigo.
+
+			FIND FIRST b-estrutura WHERE b-estrutura.es-codigo = c-codigo-pai
+									 AND (NOT c-bt-obsoleto OR (b-estrutura.data-termino <> ?
+									 AND b-estrutura.data-termino > TODAY)) NO-LOCK NO-ERROR.
+
+			c-quant-es  = estrutura.qtd-compon.
+			c-quantl-es = estrutura.quant-liquid.
+			
+			
+			IF AVAILABLE b-estrutura THEN
+				ASSIGN l-tem-filho = YES.
+		       
+		              
+			IF l-tem-filho THEN
+				RUN pi-busca-ultima-camada (INPUT p-componente,
+											INPUT c-codigo-pai).
+			ELSE DO:
+				FIND FIRST tt-ultima-camada
+					 WHERE tt-ultima-camada.componente      = p-componente
+					   AND tt-ultima-camada.rowid-estrutura = ROWID(mgcad.estrutura)
+					 NO-ERROR.
+				IF NOT AVAILABLE tt-ultima-camada THEN DO:
+					CREATE tt-ultima-camada.
+					ASSIGN tt-ultima-camada.componente      = p-componente
+						   tt-ultima-camada.rowid-estrutura = ROWID(mgcad.estrutura).
+				END.
+			END.
+		END.
+	END PROCEDURE.
+											  
+	FOR EACH mgcad.item WHERE mgcad.item.ge-codigo >= c-ge-ini 
+						  AND mgcad.item.ge-codigo <= c-ge-fin
+						  AND mgcad.item.fm-codigo >= c-fm-ini	
+						  AND mgcad.item.fm-codigo <= c-fm-fin 
+						  AND mgcad.item.it-codigo >= c-it-ini
+						  AND mgcad.item.it-codigo <= c-it-fin	NO-LOCK.
+
+		RUN pi-busca-ultima-camada (INPUT mgcad.item.it-codigo,
+									INPUT mgcad.item.it-codigo).
+
+		FOR EACH tt-ultima-camada WHERE tt-ultima-camada.componente = mgcad.item.it-codigo:
+
+						FIND FIRST mgcad.estrutura WHERE ROWID(mgcad.estrutura) = tt-ultima-camada.rowid-estrutura NO-LOCK NO-ERROR.
+						IF NOT AVAILABLE mgcad.estrutura THEN
+							NEXT.
+
+						i-linha = i-linha + 1.
 					
 					FIND FIRST b-item-es WHERE b-item-es.it-codigo = mgcad.estrutura.it-codigo NO-LOCK NO-ERROR.
 					
@@ -216,7 +272,7 @@ FOR EACH mgcad.item WHERE mgcad.item.ge-codigo >= c-ge-ini
 					ELSE
 					ASSIGN 	c-desc-es = ""
 							c-un-es   = "".
-					
+										
 					ASSIGN  c-data-inicio  = STRING(mgcad.estrutura.data-inicio, "99/99/9999").			 			 
 							c-data-termino = STRING(mgcad.estrutura.data-termino, "99/99/9999").
     					
@@ -279,7 +335,7 @@ FOR EACH mgcad.item WHERE mgcad.item.ge-codigo >= c-ge-ini
                        tt-dados.celula-coluna  = 8
                        tt-dados.celula-linha   = i-linha
                        tt-dados.celula-formato = "@"
-                       tt-dados.celula-valor   = STRING(mgcad.estrutura.qtd-item).
+                       tt-dados.celula-valor   = string(c-quant-es).
                        
                 CREATE tt-dados.
                 ASSIGN tt-dados.arquivo-num    = 1
@@ -303,7 +359,7 @@ FOR EACH mgcad.item WHERE mgcad.item.ge-codigo >= c-ge-ini
                        tt-dados.celula-coluna  = 11
                        tt-dados.celula-linha   = i-linha
                        tt-dados.celula-formato = "@"
-                       tt-dados.celula-valor   = STRING(mgcad.estrutura.quant-liquid).
+                       tt-dados.celula-valor   = string(c-quantl-es).
              
                 CREATE tt-dados.
                 ASSIGN tt-dados.arquivo-num    = 1
